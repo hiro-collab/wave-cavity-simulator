@@ -1,0 +1,8 @@
+{
+  "seed": 420731,
+  "dt": 0.3,
+  "layer_mass": 4.0,
+  "layer_stiffness": 2.0,
+  "pulse_sigma_periods": 0.225,
+  "amplitude_scale": 1.0
+}

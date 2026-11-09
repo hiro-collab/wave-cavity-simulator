@@ -1,0 +1,17 @@
+__pycache__/
+*.pyc
+native/*.bin
+native/*.npy
+native/*.npz
+native/*.csv
+native/*.png
+native/*.mp4
+native/config.json
+native/parameters.h
+native/input.txt
+native/frame_times.npy
+native/simulate
+native/simulate.exe
+native/validation.json
+native/half_step_validation.json
+native/verify_half_step/
