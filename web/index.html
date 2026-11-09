@@ -2,31 +2,41 @@
 <html lang="ja">
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Wave Cavity Simulator</title><link rel="stylesheet" href="style.css"></head>
 <body>
-<header><div class="eyebrow">INTERACTIVE PHYSICS LAB · 2D SCALAR WAVES</div><h1>Wave Cavity Simulator</h1><p>静止状態から波を作り、層での反射と干渉を観察する。</p></header>
+<header><div class="eyebrow">INTERACTIVE PHYSICS LAB · 2D SCALAR WAVES · v1.1</div><h1>Wave Cavity Simulator</h1><p>波の発生・波長・配色を操作して、層での反射と干渉を観察する。</p></header>
 <main>
 <section class="panel visual" aria-label="波動シミュレーション">
 <div class="toolbar"><div><span class="dot"></span><strong id="state">静止 · Ready</strong></div><output id="time">t / T₀ = 0.00</output></div>
-<div class="canvas-wrap"><canvas id="field" width="1080" height="402" aria-label="二次元変位場。青は負、橙は正、縦の線は材料層。"></canvas></div>
+<div class="canvas-wrap"><canvas id="field" width="1080" height="402" aria-label="二次元変位場。配色は凡例に対応、縦の線は材料層。"></canvas></div>
 <div class="legend"><span>表示範囲 x = 400–940 / y = 100–300</span><span><i class="negative"></i> 負 <i class="zero"></i> 0 <i class="positive"></i> 正</span></div>
+<div class="color-legend"><span id="negative-label">−0.500</span><div id="color-bar" aria-hidden="true"></div><span id="positive-label">+0.500</span></div>
 <div class="section-title">CENTERLINE <span>y = 200 · 変位 u</span></div>
 <canvas id="section" width="1080" height="170" aria-label="中心線 y=200 における変位の断面"></canvas>
 <div class="actions"><button id="play" class="primary">▶ 開始 / Run</button><button id="step">1 ステップ</button><button id="reset">静止に戻す / Reset</button></div>
+<div class="source-controls"><div class="actions"><button id="emit" class="primary">波を1回発生 / Emit</button><button id="stop-source">励振を止める / Stop source</button></div><output id="source-state"></output><p class="hint">発生ボタンは時間を進めません。停止中は予約し、「開始」で進めます。1組の発生中は追加予約できません。励振停止は伝播中の波を残します。</p></div>
 <p id="status" role="status">初期変位・速度はともにゼロ。最初のパルスは t/T₀ ≈ 0.67 から始まります。</p>
 </section>
 <aside class="panel controls"><h2>パラメーター</h2><p class="hint">物理パラメーターを変更した後は「適用」で静止状態から再計算します。</p>
 <form id="parameters">
+<label for="source-mode">発生モード</label><select id="source-mode"><option value="auto">自動デモ（元の12波源）</option><option value="manual">手動（発生ボタンで開始）</option></select>
 <label for="mass">層の質量 m <span>1–10</span></label><input id="mass" type="number" min="1" max="10" step="0.1" value="4" required>
 <label for="stiffness">層のばね定数 K <span>0.1–2</span></label><input id="stiffness" type="number" min="0.1" max="2" step="0.1" value="2" required>
 <label for="amplitude">励振振幅 × <span>0.01–10</span></label><input id="amplitude" type="number" min="0.01" max="10" step="0.01" value="1" required>
-<label for="sigma">パルス幅 σ / T₀ <span>0.1–0.3</span></label><input id="sigma" type="number" min="0.1" max="0.3" step="0.005" value="0.225" required>
+<label for="wavelength">波長の目安 λ ≈ <output id="wavelength-label">80.0</output> 格子</label><input id="wavelength" type="range" min="35.54306350526693" max="106.6291905158008" step="any" value="79.9718928868506">
+<label for="sigma">パルス幅 σ / T₀ <span>0.1–0.3</span></label><input id="sigma" type="number" min="0.1" max="0.3" step="any" value="0.225" required>
+<p id="wave-info" class="hint"></p><p class="hint">背景媒質での概算 λ ≈ √2 π σ（35.5–106.6 格子）。有限幅の Ricker 波は広帯域で、単一波長ではありません。スライダーとパルス幅は連動します。</p>
 <label class="check"><input id="mirrors" type="checkbox" checked> 材料層あり / Mirrors</label>
-<button type="submit" class="apply">適用してリセット</button><button id="defaults" type="button">初期設定に戻す</button>
+<button type="submit" class="apply">適用してリセット</button><button id="defaults" type="button">物理設定を初期値に戻す</button>
 </form>
 <hr><label for="speed">計算速度 <output id="speed-label">8</output> steps/frame</label><input id="speed" type="range" min="1" max="32" value="8">
 <label for="gain">表示ゲイン <output id="gain-label">1.0</output>×</label><input id="gain" type="range" min="0.25" max="8" step="0.25" value="1">
 <p class="hint">速度と表示ゲインは物理モデルを変更しません。描画負荷に応じて実時間の速度は変わります。</p>
+<hr><h2>配色（すぐ反映）</h2>
+<div class="color-inputs"><label for="background">背景・変位ゼロ<input id="background" type="color" value="#0c1726"></label><label for="text-color">文字<input id="text-color" type="color" value="#dce6f4"></label></div>
+<label for="palette">波のカラースケール</label><select id="palette"><option value="blue-orange">青 → 背景 → 橙</option><option value="cyan-magenta">シアン → 背景 → マゼンタ</option><option value="blue-red">青 → 背景 → 赤</option><option value="gray">灰 → 背景 → 白</option><option value="custom" disabled>カスタム</option></select>
+<div class="color-inputs"><label for="negative-color">負の変位<input id="negative-color" type="color" value="#338bd4"></label><label for="positive-color">正の変位<input id="positive-color" type="color" value="#eea560"></label></div>
+<button id="display-defaults" type="button">配色を初期値に戻す</button><p class="hint">配色は場・凡例・中心断面に連動し、波や計算状態を変えません。見にくい配色になったら初期値に戻してください。</p>
 <button id="export" type="button">設定を JSON 保存</button>
 </aside>
-<section class="panel notes"><h2>このモデルについて</h2><p>1,250 × 401 点のスカラー質点・ばね格子。元の C++ 版と同じ全計算領域を倍精度で更新します。表示のみ中央部分を切り出しています。5 枚の材料層で反射が生まれ、中央の波が重なります。</p><div class="note-grid"><p><b>忠実な時間発展</b><br>減衰付き中心差分 leapfrog、Δt = 0.3。界面のばねは調和平均。端の吸収帯と固定端を含みます。</p><p><b>有限時間の励振</b><br>12 点の有限幅 Ricker パルス。T₀ = 80 は基準時間で、単一周波数の定常駆動ではありません。既定では全励振が約 4.55 T₀ で終了します。</p><p><b>読み取りの注意</b><br>色は変位で、エネルギーではありません。自動正規化は行いません。反射率、増幅、位相同期、非線形は設定していません。</p></div><p>ブラウザ版は 60 T₀ で停止します。詳細なエネルギー収支・高精度再現は <a href="../README.md">README</a> と native 版を参照してください。音響・電磁場をそのまま再現する汎用ソルバーではありません。</p></section>
+<section class="panel notes"><h2>このモデルについて</h2><p>1,250 × 401 点のスカラー質点・ばね格子。元の C++ 版と同じ全計算領域を倍精度で更新します。表示のみ中央部分を切り出しています。5 枚の材料層で反射が生まれ、中央の波が重なります。</p><div class="note-grid"><p><b>忠実な時間発展</b><br>減衰付き中心差分 leapfrog、Δt = 0.3。界面のばねは調和平均。端の吸収帯と固定端を含みます。</p><p><b>有限時間の励振</b><br>自動デモは元の時刻で12波源を1回だけ発生。手動発生は同じ位置・符号・時間差を保ち、最初のパルスの裾を現在時刻から始めます。T₀ = 80 は基準時間です。</p><p><b>読み取りの注意</b><br>色は変位で、エネルギーではありません。自動正規化は行いません。波長は背景の c ≈ √(K/m) = 1 での概算です。材料層や格子分散で変わります。</p></div><p>ブラウザ版は 60 T₀ で停止します。その時刻までに1組を完了できない新規発生はできません。JSON は適用済み設定と最後の1組の記録のみで、場の保存・再開・設定の再読込には対応していません。詳細は <a href="../README.md">README</a> と native 版を参照してください。音響・電磁場をそのまま再現する汎用ソルバーではありません。</p></section>
 </main><footer>LOCAL-FIRST · 外部通信なし · 外部ライブラリ不要</footer>
 <script src="model.js"></script><script src="app.js"></script></body></html>
