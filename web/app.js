@@ -61,12 +61,15 @@ function status(){
 }
 function refresh(){draw();status();}
 function reset(options=model.options){running=false;model=new CavityModel(options);dirty=false;notice='';refresh();}
-function sourcePreview(fromWavelength=false){
-  if(fromWavelength)$('sigma').value=String(Math.max(8,Math.min(24,Number($('wavelength').value)/CAVITY_WAVE_FACTOR))/80);
+function sourcePreview(fromSlider=false){
+  // Store sigma in the range, whose integer endpoints survive browser serialization.
+  // Irrational wavelength endpoints can round above max and invalidate the form.
+  if(fromSlider)$('sigma').value=String(Math.max(8,Math.min(24,Number($('wavelength').value)))/80);
   const sigma=80*Number($('sigma').value);
   if(!Number.isFinite(sigma)||sigma<8||sigma>24){$('wave-info').textContent='パルス幅は 0.1–0.3 T₀ の範囲で入力してください。';return;}
   const wavelength=CAVITY_WAVE_FACTOR*sigma;
-  $('wavelength').value=String(wavelength);$('wavelength-label').textContent=wavelength.toFixed(1);
+  $('wavelength').value=String(sigma);$('wavelength-label').textContent=wavelength.toFixed(1);
+  $('wavelength').setAttribute('aria-valuetext','波長の目安 約'+wavelength.toFixed(1)+'格子');
   $('wave-info').textContent='入力値: σ = '+(sigma/80).toFixed(3)+' T₀、f_peak × T₀ ≈ '+(80/wavelength).toFixed(3)+'。適用済み λ ≈ '+(CAVITY_WAVE_FACTOR*model.options.sigma).toFixed(1)+' 格子。';
 }
 $('play').onclick=()=>{if(model.time>=4800)return;running=!running;notice='';refresh();};

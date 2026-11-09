@@ -5,8 +5,8 @@ const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/st
 const elements={},gradients=[],styles={};
 const context={clearRect(){},fillRect(){},strokeRect(){},drawImage(){},setLineDash(){},beginPath(){},moveTo(){},lineTo(){},stroke(){},fillText(){},putImageData(){},createImageData(w,h){return {data:new Uint8ClampedArray(w*h*4)}},createLinearGradient(){const stops=[];gradients.push(stops);return {addColorStop:(offset,color)=>stops.push([offset,color])}}};
 const html=fs.readFileSync('web/index.html','utf8');
-for(const id of [...html.matchAll(/id="([^"]+)"/g)].map(m=>m[1]))elements[id]={value:'',checked:true,style:{},disabled:false,width:1080,height:402,getContext(){return context},addEventListener(type,fn){this[type]=fn},reportValidity(){return true}};
-Object.entries({mass:4,stiffness:2,amplitude:1,sigma:.225,speed:8,gain:1,'source-mode':'auto',wavelength:Math.SQRT2*Math.PI*18}).forEach(([k,v])=>elements[k].value=String(v));
+for(const id of [...html.matchAll(/id="([^"]+)"/g)].map(m=>m[1]))elements[id]={value:'',checked:true,style:{},disabled:false,width:1080,height:402,getContext(){return context},addEventListener(type,fn){this[type]=fn},setAttribute(name,value){this[name]=value},reportValidity(){return true}};
+Object.entries({mass:4,stiffness:2,amplitude:1,sigma:.225,speed:8,gain:1,'source-mode':'auto',wavelength:18}).forEach(([k,v])=>elements[k].value=String(v));
 let nextFrame,download,released=0,clicked=0;
 const sandbox={window:{},document:{documentElement:{style:{setProperty:(k,v)=>styles[k]=v}},getElementById:id=>elements[id],createElement:()=>({getContext:()=>context,click(){clicked++}})},requestAnimationFrame:f=>nextFrame=f,performance:{now:()=>0},setTimeout:f=>f(),URL:{createObjectURL:b=>{download=b;return 'blob:test'},revokeObjectURL:()=>released++},Blob};
 vm.createContext(sandbox);vm.runInContext(fs.readFileSync('web/model.js','utf8'),sandbox);
@@ -59,11 +59,23 @@ input('mass','');submit();assert.equal(read('model'),modelRef);assert.equal(read
 input('mass',11);submit();assert.equal(read('model'),modelRef);assert.match(elements.status.textContent,/範囲外/);
 elements.parameters.reportValidity=()=>false;input('mass',5);submit();assert.equal(read('model'),modelRef);
 elements.parameters.reportValidity=()=>true;
-// Exact slider endpoints and arbitrary interior values must be valid and linked.
-for(const [wavelength,sigma] of [[35.54306350526693,8],[106.6291905158008,24],[60,60/(Math.SQRT2*Math.PI)]]){
-  input('wavelength',wavelength);submit();assert.ok(Math.abs(read('model.options.sigma')-sigma)<1e-12);assert.equal(read('dirty'),false);assert.equal(read('running'),false);
+// Chrome rounds range serialization to 15 significant digits. Irrational max
+// 106.6291905158008 became 106.629190515801 and failed native form validation.
+const sliderHTML=html.match(/<input id="wavelength"[^>]+>/)[0];
+const sliderMin=Number(sliderHTML.match(/min="([^"]+)"/)[1]);
+const sliderMax=Number(sliderHTML.match(/max="([^"]+)"/)[1]);
+const serializeRange=value=>Number(Number(value).toPrecision(15));
+assert.ok(serializeRange(106.6291905158008)>106.6291905158008,'regression reproduces the previous endpoint failure');
+assert.equal(sliderMin,8);assert.equal(sliderMax,24);assert.match(sliderHTML,/step="any"/);
+elements.parameters.reportValidity=()=>{const v=serializeRange(elements.wavelength.value);return v>=sliderMin&&v<=sliderMax;};
+// Home/End, arbitrary interior value, sigma linkage, and displayed lambda.
+for(const sigma of [sliderMin,sliderMax,60/(Math.SQRT2*Math.PI)]){
+  input('wavelength',serializeRange(sigma));assert.equal(elements.parameters.reportValidity(),true);submit();
+  assert.ok(Math.abs(read('model.options.sigma')-sigma)<1e-12);assert.equal(read('dirty'),false);assert.equal(read('running'),false);
+  assert.equal(elements['wavelength-label'].textContent,(Math.SQRT2*Math.PI*sigma).toFixed(1));
+  assert.match(elements.wavelength['aria-valuetext'],/波長の目安/);
 }
-input('sigma',.2);assert.ok(Math.abs(Number(elements.wavelength.value)-Math.SQRT2*Math.PI*16)<1e-12);
+input('sigma',.2);assert.equal(Number(elements.wavelength.value),16);
 elements.reset.onclick();assert.equal(read('dirty'),true);assert.notEqual(read('model.options.sigma'),16);
 submit();assert.equal(read('model.options.sigma'),16);
 elements.defaults.onclick();assert.equal(read('model.options.sigma'),18);assert.equal(elements.sigma.value,.225);assert.equal(read('model.options.sourceMode'),'auto');

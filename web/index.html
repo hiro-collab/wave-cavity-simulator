@@ -21,7 +21,7 @@
 <label for="mass">層の質量 m <span>1–10</span></label><input id="mass" type="number" min="1" max="10" step="0.1" value="4" required>
 <label for="stiffness">層のばね定数 K <span>0.1–2</span></label><input id="stiffness" type="number" min="0.1" max="2" step="0.1" value="2" required>
 <label for="amplitude">励振振幅 × <span>0.01–10</span></label><input id="amplitude" type="number" min="0.01" max="10" step="0.01" value="1" required>
-<label for="wavelength">波長の目安 λ ≈ <output id="wavelength-label">80.0</output> 格子</label><input id="wavelength" type="range" min="35.54306350526693" max="106.6291905158008" step="any" value="79.9718928868506">
+<label for="wavelength">波長の目安 λ ≈ <output id="wavelength-label">80.0</output> 格子</label><input id="wavelength" type="range" min="8" max="24" step="any" value="18" aria-valuetext="波長の目安 約80.0格子">
 <label for="sigma">パルス幅 σ / T₀ <span>0.1–0.3</span></label><input id="sigma" type="number" min="0.1" max="0.3" step="any" value="0.225" required>
 <p id="wave-info" class="hint"></p><p class="hint">背景媒質での概算 λ ≈ √2 π σ（35.5–106.6 格子）。有限幅の Ricker 波は広帯域で、単一波長ではありません。スライダーとパルス幅は連動します。</p>
 <label class="check"><input id="mirrors" type="checkbox" checked> 材料層あり / Mirrors</label>
